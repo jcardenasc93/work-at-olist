@@ -1,31 +1,33 @@
-package db
+package models
 
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func InitDB(fileName string) (*sql.DB, error) {
+var dbConn *sql.DB
+
+func InitDB(fileName string) error {
+	err := errors.New("")
 	if fileName == "" {
-		return nil, errors.New("DB name couldn't be empty")
+		return errors.New("DB name couldn't be empty")
 	}
-	dbConn, err := sql.Open("sqlite3", fileName)
+	dbConn, err = sql.Open("sqlite3", fileName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = dbConn.Ping()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dbConn.SetMaxOpenConns(5)
 
-	fmt.Println("DB connection success!!!")
+	log.Println("DB connection success!!!")
 
 	createAuthorsTable := `
     CREATE TABLE IF NOT EXISTS authors (
@@ -36,18 +38,18 @@ func InitDB(fileName string) (*sql.DB, error) {
 
 	stmt, err := dbConn.Prepare(createAuthorsTable)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	_, err = stmt.Exec()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return dbConn, nil
+	return nil
 }
 
-func InsertAuthor(dbConn *sql.DB, authorName string) error {
+func InsertAuthor(authorName string) error {
 	insertAuthorStmt := `
     INSERT INTO authors (name) VALUES (?)
     `

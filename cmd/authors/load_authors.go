@@ -7,8 +7,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
-	"github.com/jcardenasc93/work-at-olist/db"
+	"github.com/jcardenasc93/work-at-olist/app/models"
 )
 
 const dbName = "sqlite.db"
@@ -19,29 +20,29 @@ func main() {
 	flag.StringVar(&csvFile, "csv", "", "CSV file path")
 	flag.Parse()
 
-	file, err := os.Open(csvFile)
+	file, err := os.Open(filepath.Base("../../input.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	csvReader := csv.NewReader(file)
-	dbConn, err := db.InitDB(dbName)
+	err = models.InitDB(dbName)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for {
 		author, err := csvReader.Read()
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if author[0] != "name" {
-			err = db.InsertAuthor(dbConn, author[0])
+			err = models.InsertAuthor(author[0])
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 
 	}
-	defer dbConn.Close()
 	defer file.Close()
 
 }
