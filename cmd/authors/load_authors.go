@@ -14,6 +14,7 @@ import (
 const dbName = "sqlite.db"
 
 func main() {
+	os.Remove(dbName)
 	var csvFile string
 	flag.StringVar(&csvFile, "csv", "", "CSV file path")
 	flag.Parse()
