@@ -25,7 +25,11 @@ func main() {
 		log.Fatal(err)
 	}
 	csvReader := csv.NewReader(file)
-	err = models.InitDB(dbName)
+	err = models.InitDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = models.CreateAuthorsTable()
 	if err != nil {
 		log.Fatal(err)
 	}

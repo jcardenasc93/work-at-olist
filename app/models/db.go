@@ -4,18 +4,26 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"os"
+	"path"
 
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var dbConn *sql.DB
 
-func InitDB(fileName string) error {
-	err := errors.New("")
-	if fileName == "" {
+func InitDB() error {
+	err := godotenv.Load(path.Base("../../.env"))
+	if err != nil {
+		return err
+	}
+
+	dbName := os.Getenv("dbName")
+	if dbName == "" {
 		return errors.New("DB name couldn't be empty")
 	}
-	dbConn, err = sql.Open("sqlite3", fileName)
+	dbConn, err = sql.Open("sqlite3", dbName)
 	if err != nil {
 		return err
 	}
@@ -28,6 +36,10 @@ func InitDB(fileName string) error {
 	dbConn.SetMaxOpenConns(5)
 
 	log.Println("DB connection success!!!")
+	return nil
+}
+
+func CreateAuthorsTable() error {
 
 	createAuthorsTable := `
     CREATE TABLE IF NOT EXISTS authors (
