@@ -49,6 +49,15 @@ func InitDB(fileName string) error {
 	return nil
 }
 
+func execQuery(query string) (*sql.Rows, error) {
+	rows, err := dbConn.Query(query)
+	if err != nil {
+		log.Panic(err)
+		return nil, err
+	}
+	return rows, nil
+}
+
 func InsertAuthor(authorName string) error {
 	insertAuthorStmt := `
     INSERT INTO authors (name) VALUES (?)
