@@ -61,8 +61,8 @@ func CreateAuthorsTable() error {
 	return nil
 }
 
-func execQuery(query string) (*sql.Rows, error) {
-	rows, err := dbConn.Query(query)
+func execQuery(query string, params ...any) (*sql.Rows, error) {
+	rows, err := dbConn.Query(query, params...)
 	if err != nil {
 		log.Panic(err)
 		return nil, err
