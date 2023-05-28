@@ -1,30 +1,21 @@
 package controllers
 
 import (
-	"encoding/json"
-	"net/http"
-
+	m "github.com/jcardenasc93/work-at-olist/app/middlewares"
 	"github.com/jcardenasc93/work-at-olist/app/models"
+	"net/http"
 )
-
-var responseHeaders = map[string]string{
-	"Content-Type": "application/json",
-}
 
 const nameKey string = "name"
 
-func GetAuthors(w http.ResponseWriter, r *http.Request) {
-	for key, value := range responseHeaders {
-		w.Header().Set(key, value)
-	}
+func GetAuthors(w http.ResponseWriter, r *http.Request) (*ApiError, *ApiResponse) {
+	pageId := r.Context().Value(m.PageIdKey)
 
 	params := r.URL.Query()
-	authors, err := models.GetAuthors(params)
+	authors, err := models.GetAuthors(pageId.(int), params)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+		return NewApiError(http.StatusInternalServerError, "Internal Error"), nil
 	} else {
-		json.NewEncoder(w).Encode(authors)
+		return nil, NewApiResponse(200, authors)
 	}
-
 }
