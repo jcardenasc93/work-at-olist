@@ -7,19 +7,21 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	c "github.com/jcardenasc93/work-at-olist/app/controllers"
+	"github.com/jcardenasc93/work-at-olist/app/db"
 	m "github.com/jcardenasc93/work-at-olist/app/middlewares"
-	"github.com/jcardenasc93/work-at-olist/app/models"
 )
 
 type APIServer struct {
 	port       string
 	production bool
+	db         ApiDB
 }
 
-func NewAPIServer(port string, production bool) *APIServer {
+func NewAPIServer(port string, production bool, db ApiDB) *APIServer {
 	return &APIServer{
 		port:       port,
 		production: production,
+		db:         db,
 	}
 }
 
@@ -40,8 +42,10 @@ func (s *APIServer) Run() {
 }
 
 func main() {
-	models.InitDB()
-	server := NewAPIServer(":8080", false)
+	db, err := db.NewSQLiteDB()
+	if err != nil {
+		log.Fatal("Couldn't initialize DB")
+	}
+	server := NewAPIServer(":8080", false, db)
 	server.Run()
-
 }

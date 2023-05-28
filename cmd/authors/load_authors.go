@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jcardenasc93/work-at-olist/app/models"
+	"github.com/jcardenasc93/work-at-olist/app/db"
 )
 
 const dbName = "sqlite.db"
@@ -25,22 +25,23 @@ func main() {
 		log.Fatal(err)
 	}
 	csvReader := csv.NewReader(file)
-	err = models.InitDB()
+	db, err := db.NewSQLiteDB()
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = models.CreateAuthorsTable()
+	err = db.CreateAuthorsTable()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	log.Println("Importing authors from csv file...")
 	for {
 		author, err := csvReader.Read()
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if author[0] != "name" {
-			err = models.InsertAuthor(author[0])
+			err = db.InsertAuthor(author[0])
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -48,5 +49,6 @@ func main() {
 
 	}
 	defer file.Close()
+	log.Println("Done!")
 
 }
