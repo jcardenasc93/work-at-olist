@@ -85,7 +85,54 @@ func (sq *SQLiteDB) InsertAuthor(authorName string) error {
 	return nil
 }
 
-func (sq *SQLiteDB) FetchAuthors(pageId int) ([]*models.Author, error) {
-	authors := []*models.Author{}
+func (sq *SQLiteDB) FetchAuthors(pageId int, params ...any) ([]*models.Author, error) {
+	var authors []*models.Author
+	var rows *sql.Rows
+	var err error
+
+	query := `SELECT id, name FROM authors
+              WHERE id >= ?`
+
+	// if queryParams.Has(nameKey) {
+	// 	nameValue := string(queryParams.Get(nameKey))
+	// 	// query := filterByName(query)
+	// 	rows, err = execQuery(query, nameValue)
+	// 	if err != nil {
+	// 		return authors, err
+	// 	}
+	// } else {
+	// 	rows, err = execQuery(query, pageId)
+	// 	if err != nil {
+	// 		return authors, err
+	// 	}
+	// }
+	rows, err = sq.execQuery(query, pageId)
+	if err != nil {
+		return authors, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var id uint64
+		var name string
+
+		err = rows.Scan(&id, &name)
+		if err != nil {
+			return authors, err
+		}
+
+		authors = append(authors, models.NewAuthor(id, name))
+	}
+
 	return authors, nil
+}
+
+func (sq *SQLiteDB) execQuery(query string, params ...any) (*sql.Rows, error) {
+	rows, err := sq.db.Query(query, params...)
+	if err != nil {
+		log.Panic(err)
+		return nil, err
+	}
+	return rows, nil
 }

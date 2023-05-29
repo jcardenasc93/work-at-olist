@@ -3,9 +3,11 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/jcardenasc93/work-at-olist/app/db"
 )
 
-type apiFunc func(http.ResponseWriter, *http.Request) (*ApiError, *ApiResponse)
+type apiFunc func(http.ResponseWriter, *http.Request, db.ApiDB) (*ApiError, *ApiResponse)
 
 type ApiError struct {
 	StatusCode int    `json:"status_code"`
@@ -37,9 +39,9 @@ func WriteHttpResponse(w http.ResponseWriter, statusCode int, value any) error {
 	return json.NewEncoder(w).Encode(value)
 }
 
-func HTTPHandleFunc(f apiFunc) http.HandlerFunc {
+func HTTPHandleFunc(f apiFunc, db db.ApiDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err, resp := f(w, r); err != nil {
+		if err, resp := f(w, r, db); err != nil {
 			// Handle Error
 			WriteHttpResponse(w, err.StatusCode, err)
 			return

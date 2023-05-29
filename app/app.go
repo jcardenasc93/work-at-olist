@@ -14,10 +14,10 @@ import (
 type APIServer struct {
 	port       string
 	production bool
-	db         ApiDB
+	db         db.ApiDB
 }
 
-func NewAPIServer(port string, production bool, db ApiDB) *APIServer {
+func NewAPIServer(port string, production bool, db db.ApiDB) *APIServer {
 	return &APIServer{
 		port:       port,
 		production: production,
@@ -32,7 +32,7 @@ func (s *APIServer) Run() {
 	r.Use(middleware.Recoverer)
 
 	r.Route("/authors", func(r chi.Router) {
-		r.With(m.Pagination).Get("/", c.HTTPHandleFunc(c.GetAuthors))
+		r.With(m.Pagination).Get("/", c.HTTPHandleFunc(c.GetAuthors, s.db))
 	})
 
 	log.Printf("Server active on port: %s", s.port)
