@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"net/url"
 
 	"github.com/jcardenasc93/work-at-olist/app/models"
 )
@@ -9,6 +10,7 @@ import (
 type ApiDB interface {
 	CreateAuthorsTable() error
 	InsertAuthor(string) error
-	FetchAuthors(int, ...any) ([]*models.Author, error)
-	execQuery(query string, params ...any) (*sql.Rows, error)
+	FetchAuthors(int, url.Values) ([]*models.Author, error)
+	execQuery(string, ...any) (*sql.Rows, error)
+	filterByName(string) string
 }

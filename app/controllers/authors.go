@@ -6,11 +6,8 @@ import (
 	"net/http"
 )
 
-const nameKey string = "name"
-
 func GetAuthors(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiError, *ApiResponse) {
 	pageId := r.Context().Value(m.PageIdKey)
-
 	params := r.URL.Query()
 	authors, err := db.FetchAuthors(pageId.(int), params)
 	if err != nil {

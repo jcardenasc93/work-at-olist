@@ -3,7 +3,9 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path"
 
@@ -85,7 +87,14 @@ func (sq *SQLiteDB) InsertAuthor(authorName string) error {
 	return nil
 }
 
-func (sq *SQLiteDB) FetchAuthors(pageId int, params ...any) ([]*models.Author, error) {
+func (sq *SQLiteDB) filterByName(baseQuery string) (query string) {
+	const filter string = `AND name LIKE '%'||?||'%'`
+	query = fmt.Sprintf("%s %s", baseQuery, filter)
+	return
+}
+
+func (sq *SQLiteDB) FetchAuthors(pageId int, params url.Values) ([]*models.Author, error) {
+	const nameKey string = "name"
 	var authors []*models.Author
 	var rows *sql.Rows
 	var err error
@@ -93,24 +102,19 @@ func (sq *SQLiteDB) FetchAuthors(pageId int, params ...any) ([]*models.Author, e
 	query := `SELECT id, name FROM authors
               WHERE id >= ?`
 
-	// if queryParams.Has(nameKey) {
-	// 	nameValue := string(queryParams.Get(nameKey))
-	// 	// query := filterByName(query)
-	// 	rows, err = execQuery(query, nameValue)
-	// 	if err != nil {
-	// 		return authors, err
-	// 	}
-	// } else {
-	// 	rows, err = execQuery(query, pageId)
-	// 	if err != nil {
-	// 		return authors, err
-	// 	}
-	// }
-	rows, err = sq.execQuery(query, pageId)
-	if err != nil {
-		return authors, err
+	if params.Has(nameKey) {
+		nameValue := string(params.Get(nameKey))
+		query := sq.filterByName(query)
+		rows, err = sq.execQuery(query, pageId, nameValue)
+		if err != nil {
+			return authors, err
+		}
+	} else {
+		rows, err = sq.execQuery(query, pageId)
+		if err != nil {
+			return authors, err
+		}
 	}
-
 	defer rows.Close()
 
 	for rows.Next() {
