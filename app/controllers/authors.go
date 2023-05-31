@@ -1,18 +1,29 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/jcardenasc93/work-at-olist/app/db"
 	m "github.com/jcardenasc93/work-at-olist/app/middlewares"
-	"net/http"
 )
 
 func GetAuthors(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiError, *ApiResponse) {
-	pageId := r.Context().Value(m.PageIdKey)
+	pagination := r.Context().Value(m.PaginationKey)
+	p, ok := pagination.(*m.PaginationVals)
+	if ok == false {
+		return NewApiError(http.StatusInternalServerError, "Internal Error"), nil
+	}
 	params := r.URL.Query()
-	authors, err := db.FetchAuthors(pageId.(int), params)
+	authors, err := db.FetchAuthors(p, params)
 	if err != nil {
 		return NewApiError(http.StatusInternalServerError, "Internal Error"), nil
 	} else {
-		return nil, NewApiResponse(200, authors)
+		var nextPage int
+		if p.PageId == 0 {
+			nextPage = p.Limit
+		} else {
+			nextPage = p.PageId + p.Limit
+		}
+		return nil, NewApiResponse(200, authors, nextPage)
 	}
 }

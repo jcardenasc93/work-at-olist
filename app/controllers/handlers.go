@@ -24,12 +24,14 @@ func NewApiError(statusCode int, msg string) *ApiError {
 type ApiResponse struct {
 	StatusCode int `json:"status_code"`
 	Data       any `json:"data"`
+	NextPage   int `json:"next_page_id,omitempty"`
 }
 
-func NewApiResponse(statusCode int, data any) *ApiResponse {
+func NewApiResponse(statusCode int, data any, next_page int) *ApiResponse {
 	return &ApiResponse{
 		StatusCode: statusCode,
 		Data:       data,
+		NextPage:   next_page,
 	}
 }
 

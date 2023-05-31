@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 
+	m "github.com/jcardenasc93/work-at-olist/app/middlewares"
 	"github.com/jcardenasc93/work-at-olist/app/models"
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
@@ -93,28 +94,39 @@ func (sq *SQLiteDB) filterByName(baseQuery string) (query string) {
 	return
 }
 
-func (sq *SQLiteDB) FetchAuthors(pageId int, params url.Values) ([]*models.Author, error) {
+func (sq *SQLiteDB) sortAndLimit(baseQuery string) (query string) {
+	const limitStmt string = `ORDER BY id LIMIT ?`
+	query = fmt.Sprintf("%s %s", baseQuery, limitStmt)
+	return
+}
+
+func (sq *SQLiteDB) FetchAuthors(pagination *m.PaginationVals, params url.Values) ([]*models.Author, error) {
 	const nameKey string = "name"
 	var authors []*models.Author
 	var rows *sql.Rows
 	var err error
+	pageId := pagination.PageId
+	limit := pagination.Limit
 
 	query := `SELECT id, name FROM authors
-              WHERE id >= ?`
+              WHERE id > ?`
 
 	if params.Has(nameKey) {
 		nameValue := string(params.Get(nameKey))
-		query := sq.filterByName(query)
-		rows, err = sq.execQuery(query, pageId, nameValue)
+		query = sq.filterByName(query)
+		query = sq.sortAndLimit(query)
+		rows, err = sq.execQuery(query, pageId, nameValue, limit)
 		if err != nil {
 			return authors, err
 		}
 	} else {
-		rows, err = sq.execQuery(query, pageId)
+		query = sq.sortAndLimit(query)
+		rows, err = sq.execQuery(query, pageId, limit)
 		if err != nil {
 			return authors, err
 		}
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
