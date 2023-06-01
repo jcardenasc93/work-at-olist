@@ -46,7 +46,6 @@ func HTTPHandleFunc(f apiFunc, db db.ApiDB) http.HandlerFunc {
 		if err, resp := f(w, r, db); err != nil {
 			// Handle Error
 			WriteHttpResponse(w, err.StatusCode, err)
-			return
 		} else {
 			WriteHttpResponse(w, resp.StatusCode, resp)
 		}
