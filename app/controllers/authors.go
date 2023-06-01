@@ -7,16 +7,16 @@ import (
 	m "github.com/jcardenasc93/work-at-olist/app/middlewares"
 )
 
-func GetAuthors(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiError, *ApiResponse) {
+func GetAuthors(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiResponse, *ApiError) {
 	pagination := r.Context().Value(m.PaginationKey)
 	p, ok := pagination.(*m.PaginationVals)
 	if ok == false {
-		return NewApiError(http.StatusInternalServerError, "Internal Error"), nil
+		return nil, NewApiError(http.StatusInternalServerError, "Internal Error")
 	}
 	params := r.URL.Query()
 	authors, err := db.FetchAuthors(p, params)
 	if err != nil {
-		return NewApiError(http.StatusInternalServerError, "Internal Error"), nil
+		return nil, NewApiError(http.StatusInternalServerError, "Internal Error")
 	} else {
 		var nextPage int
 		if p.PageId == 0 {
@@ -24,6 +24,6 @@ func GetAuthors(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiError,
 		} else {
 			nextPage = p.PageId + p.Limit
 		}
-		return nil, NewApiResponse(200, authors, nextPage)
+		return NewApiResponse(200, authors, nextPage), nil
 	}
 }

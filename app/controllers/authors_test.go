@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/jcardenasc93/work-at-olist/app/db"
@@ -18,6 +19,7 @@ var mockDB *db.MockDB = db.NewMockDB()
 
 func populateAuthors() {
 	var authors []*models.Author
+	mockDB.Authors = authors
 	for i := 0; i < 10; i++ {
 		author := models.NewAuthor(uint64(i+1), fmt.Sprintf("Author %d", i+1))
 		authors = append(authors, author)
@@ -38,8 +40,18 @@ func decodeResponseBody(t *testing.T, body io.ReadCloser) ApiResponse {
 	return authors
 }
 
-func TestGetAuthorsAPINoParams(t *testing.T) {
+func TestGetAuthorsAPI(t *testing.T) {
+	t.Run("Success cases", getAuthorsAPISuccess)
+	t.Run("Pagination errors", getAuthorsPaginationErr)
+}
+
+func getAuthorsAPISuccess(t *testing.T) {
 	populateAuthors()
+	t.Run("Fetch authors with no params", getAuthorsNoParams)
+	t.Run("Fetch authors with params", getAuthorsWithParams)
+}
+
+func getAuthorsNoParams(t *testing.T) {
 	handler := HTTPHandleFunc(GetAuthors, mockDB)
 	testHandler := middlewares.Pagination(handler)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -53,11 +65,77 @@ func TestGetAuthorsAPINoParams(t *testing.T) {
 		t.Errorf("Expected HTTP code %d but got %d", http.StatusOK, response.StatusCode)
 	}
 	apiRes := decodeResponseBody(t, response.Body)
-	authors, _ := apiRes.Data.([]interface{})
+	authors := apiRes.Data.([]interface{})
 	if len(authors) != len(mockDB.Authors[:middlewares.DefaultLimit]) {
 		t.Errorf("Expected %d authors but got %d", len(mockDB.Authors), len(authors))
 	}
 	if apiRes.NextPage != middlewares.DefaultLimit {
 		t.Errorf("Expected %d next_page value but got %d", middlewares.DefaultLimit, apiRes.NextPage)
+	}
+}
+
+func getAuthorsPaginationErr(t *testing.T) {
+	handler := HTTPHandleFunc(GetAuthors, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, "/?page_id=text", nil)
+	resRecorder := httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response := resRecorder.Result()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected HTTP code %d but got %d", http.StatusBadRequest, response.StatusCode)
+	}
+
+	defer response.Body.Close()
+
+	req = httptest.NewRequest(http.MethodGet, "/?limit=text", nil)
+	resRecorder = httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response = resRecorder.Result()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected HTTP code %d but got %d", http.StatusBadRequest, response.StatusCode)
+	}
+}
+
+func getAuthorsWithParams(t *testing.T) {
+	limit := 5
+
+	handler := HTTPHandleFunc(GetAuthors, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d", limit), nil)
+	q := req.URL.Query()
+	q.Add("limit", strconv.Itoa(limit))
+	req.URL.RawQuery = q.Encode()
+	resRecorder := httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response := resRecorder.Result()
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("Expected HTTP code %d but got %d", http.StatusOK, response.StatusCode)
+	}
+	apiRes := decodeResponseBody(t, response.Body)
+	authors := apiRes.Data.([]interface{})
+	if len(authors) != limit {
+		t.Errorf("Expected %d authors but got %d", len(mockDB.Authors), len(authors))
+	}
+	if apiRes.NextPage != apiRes.NextPage {
+		t.Errorf("Expected %d next_page value but got %d", middlewares.DefaultLimit, apiRes.NextPage)
+	}
+
+	pageId := apiRes.NextPage
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&page_id=%d", limit, pageId), nil)
+	resRecorder = httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response = resRecorder.Result()
+	apiRes = decodeResponseBody(t, response.Body)
+	// fmt.Println(apiRes)
+	authors = apiRes.Data.([]interface{})
+	author := authors[0].(map[string]comparable)
+	expectedAuthor := mockDB.Authors[pageId]
+	fmt.Println(expectedAuthor)
+
+	if author["id"] != pageId {
+		t.Errorf("Expected author id: %d. But got %d", expectedAuthor.Id, author["id"])
 	}
 }

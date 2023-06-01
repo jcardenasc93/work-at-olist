@@ -7,7 +7,7 @@ import (
 	"github.com/jcardenasc93/work-at-olist/app/db"
 )
 
-type apiFunc func(http.ResponseWriter, *http.Request, db.ApiDB) (*ApiError, *ApiResponse)
+type apiFunc func(http.ResponseWriter, *http.Request, db.ApiDB) (*ApiResponse, *ApiError)
 
 type ApiError struct {
 	StatusCode int    `json:"status_code"`
@@ -43,7 +43,7 @@ func WriteHttpResponse(w http.ResponseWriter, statusCode int, value any) error {
 
 func HTTPHandleFunc(f apiFunc, db db.ApiDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err, resp := f(w, r, db); err != nil {
+		if resp, err := f(w, r, db); err != nil {
 			// Handle Error
 			WriteHttpResponse(w, err.StatusCode, err)
 		} else {

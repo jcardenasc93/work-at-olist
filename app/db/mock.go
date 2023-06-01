@@ -22,14 +22,13 @@ func (m *MockDB) CreateAuthorsTable() error { return nil }
 func (m *MockDB) InsertAuthor(string) error { return nil }
 
 func (m *MockDB) FetchAuthors(pagination *middlewares.PaginationVals, vals url.Values) ([]*models.Author, error) {
+	var authors []*models.Author
 	limit := pagination.Limit
 	pageId := pagination.PageId
 
-	if pageId == 0 {
-		return m.Authors[:limit], nil
-	}
+	authors = m.Authors[pageId:]
 
-	return m.Authors, nil
+	return authors[:limit], nil
 }
 
 func (m *MockDB) filterByName(baseQ string) (query string) { return query }
