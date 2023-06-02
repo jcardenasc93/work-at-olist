@@ -98,7 +98,12 @@ func getAuthorsPaginationErr(t *testing.T) {
 
 func getAuthorsWithParams(t *testing.T) {
 	limit := 5
+	resp := getAuthorsWithLimit(t, limit)
+	getAuthorsWithPageId(t, limit, resp.NextPage)
+	getAuthorsNameFilter(t, "7", limit)
+}
 
+func getAuthorsWithLimit(t *testing.T, limit int) ApiResponse {
 	handler := HTTPHandleFunc(GetAuthors, mockDB)
 	testHandler := middlewares.Pagination(handler)
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d", limit), nil)
@@ -122,28 +127,35 @@ func getAuthorsWithParams(t *testing.T) {
 	if apiRes.NextPage != apiRes.NextPage {
 		t.Errorf("Expected %d next_page value but got %d", middlewares.DefaultLimit, apiRes.NextPage)
 	}
+	return apiRes
+}
 
-	pageId := apiRes.NextPage
-	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&page_id=%d", limit, pageId), nil)
-	resRecorder = httptest.NewRecorder()
+func getAuthorsWithPageId(t *testing.T, limit, pageId int) {
+	handler := HTTPHandleFunc(GetAuthors, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&page_id=%d", limit, pageId), nil)
+	resRecorder := httptest.NewRecorder()
 	testHandler.ServeHTTP(resRecorder, req)
-	response = resRecorder.Result()
-	apiRes = decodeResponseBody(t, response.Body)
-	authors = apiRes.Data.([]interface{})
+	response := resRecorder.Result()
+	apiRes := decodeResponseBody(t, response.Body)
+	authors := apiRes.Data.([]interface{})
 	author := authors[0].(map[string]any)
 	id := author["id"].(float64)
 	expetedAuth := mockDB.Authors[limit]
 	if id != float64(expetedAuth.Id) {
 		t.Errorf("Expected %d author's id but got %v", expetedAuth.Id, id)
 	}
+}
 
-	name := "7"
-	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&name=%s", 3, name), nil)
-	resRecorder = httptest.NewRecorder()
+func getAuthorsNameFilter(t *testing.T, name string, limit int) {
+	handler := HTTPHandleFunc(GetAuthors, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&name=%s", 3, name), nil)
+	resRecorder := httptest.NewRecorder()
 	testHandler.ServeHTTP(resRecorder, req)
-	response = resRecorder.Result()
-	apiRes = decodeResponseBody(t, response.Body)
-	authors = apiRes.Data.([]interface{})
+	response := resRecorder.Result()
+	apiRes := decodeResponseBody(t, response.Body)
+	authors := apiRes.Data.([]interface{})
 	if len(authors) != 1 {
 		t.Errorf("Expected %d authors but got %d", 1, len(authors))
 	}

@@ -36,7 +36,6 @@ func (m *MockDB) FetchAuthors(pagination *middlewares.PaginationVals, vals url.V
 	}
 
 	authors = authors[pageId:]
-
 	if limit < len(authors) {
 		return authors[:limit], nil
 	}
