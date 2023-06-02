@@ -11,6 +11,5 @@ type ApiDB interface {
 	CreateAuthorsTable() error
 	InsertAuthor(string) error
 	FetchAuthors(*middlewares.PaginationVals, url.Values) ([]*models.Author, error)
-	filterByName(string) string
 	sortAndLimit(string) string
 }

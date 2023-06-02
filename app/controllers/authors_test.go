@@ -117,7 +117,7 @@ func getAuthorsWithParams(t *testing.T) {
 	apiRes := decodeResponseBody(t, response.Body)
 	authors := apiRes.Data.([]interface{})
 	if len(authors) != limit {
-		t.Errorf("Expected %d authors but got %d", len(mockDB.Authors), len(authors))
+		t.Errorf("Expected %d authors but got %d", limit, len(authors))
 	}
 	if apiRes.NextPage != apiRes.NextPage {
 		t.Errorf("Expected %d next_page value but got %d", middlewares.DefaultLimit, apiRes.NextPage)
@@ -135,5 +135,16 @@ func getAuthorsWithParams(t *testing.T) {
 	expetedAuth := mockDB.Authors[limit]
 	if id != float64(expetedAuth.Id) {
 		t.Errorf("Expected %d author's id but got %v", expetedAuth.Id, id)
+	}
+
+	name := "7"
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&name=%s", 3, name), nil)
+	resRecorder = httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response = resRecorder.Result()
+	apiRes = decodeResponseBody(t, response.Body)
+	authors = apiRes.Data.([]interface{})
+	if len(authors) != 1 {
+		t.Errorf("Expected %d authors but got %d", 1, len(authors))
 	}
 }
