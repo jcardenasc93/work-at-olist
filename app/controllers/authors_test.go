@@ -129,13 +129,11 @@ func getAuthorsWithParams(t *testing.T) {
 	testHandler.ServeHTTP(resRecorder, req)
 	response = resRecorder.Result()
 	apiRes = decodeResponseBody(t, response.Body)
-	// fmt.Println(apiRes)
 	authors = apiRes.Data.([]interface{})
-	author := authors[0].(map[string]comparable)
-	expectedAuthor := mockDB.Authors[pageId]
-	fmt.Println(expectedAuthor)
-
-	if author["id"] != pageId {
-		t.Errorf("Expected author id: %d. But got %d", expectedAuthor.Id, author["id"])
+	author := authors[0].(map[string]any)
+	id := author["id"].(float64)
+	expetedAuth := mockDB.Authors[limit]
+	if id != float64(expetedAuth.Id) {
+		t.Errorf("Expected %d author's id but got %v", expetedAuth.Id, id)
 	}
 }
