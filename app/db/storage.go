@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"net/url"
 
 	"github.com/jcardenasc93/work-at-olist/app/middlewares"
@@ -15,4 +16,5 @@ type ApiDB interface {
 	sortAndLimit(string) string
 	CreateBookTable() error
 	CreateAuthorBookTable() error
+	InsertBook(context.Context, *models.CreateBookReq) (*models.Book, error)
 }

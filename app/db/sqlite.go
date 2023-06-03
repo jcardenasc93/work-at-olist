@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -141,16 +142,64 @@ func (sq *SQLiteDB) InsertAuthor(authorName string) error {
     `
 	stmt, err := sq.db.Prepare(insertAuthorStmt)
 	if err != nil {
-		log.Fatalf("failing prepare: %s", err)
+		log.Fatalf("failing prepare: %s", err.Error())
 		return err
 	}
 
 	_, err = stmt.Exec(authorName)
 	if err != nil {
-		log.Fatalf("failing execution: %s", err)
+		log.Fatalf("failing execution: %s", err.Error())
 		return err
 	}
 	return nil
+}
+
+func (sq *SQLiteDB) InsertBook(ctx context.Context, bookData *models.CreateBookReq) (*models.Book, error) {
+	insertBookStmt := `INSERT INTO book (name, edition, publication_year)
+                       VALUES (?, ?, ?)`
+	insertAuthorBookStmt := `INSERT INTO author_book (author_id, book_id)
+                             VALUES (?, ?)`
+
+	tx, err := sq.db.BeginTx(ctx, nil)
+	defer tx.Rollback()
+	if err != nil {
+		log.Printf("Failing creating SQL Tx: %s\n", err.Error())
+		return nil, err
+	}
+
+	bookStmt, err := tx.Prepare(insertBookStmt)
+	if err != nil {
+		log.Printf("Failing preraring new book statement: %s\n", err.Error())
+		return nil, err
+	}
+	defer bookStmt.Close()
+	result, err := bookStmt.ExecContext(ctx, bookData.Name, bookData.Edition, bookData.PubYear)
+	if err != nil {
+		log.Printf("Failing inserting new book. \nData provided: %v\n%s", bookData, err.Error())
+		return nil, err
+	}
+
+	bookId, err := result.LastInsertId()
+	authorBookStmt, err := tx.Prepare(insertAuthorBookStmt)
+	if err != nil {
+		log.Printf("Failing preraring new author_book statement:%s\n", err.Error())
+		return nil, err
+	}
+	for _, author := range bookData.Authors {
+		_, err = authorBookStmt.ExecContext(ctx, author, bookId)
+		if err != nil {
+			log.Printf("Failing inserting author_book relationship with author_id: %d, book_id: %d.\n%s", author, bookId, err.Error())
+			return nil, err
+		}
+	}
+	// Commit the transaction.
+	if err = tx.Commit(); err != nil {
+		log.Printf("Failing commit changes in db: %s\n", err.Error())
+		return nil, err
+	}
+
+	book := models.NewBook(uint64(bookId), bookData.Name, bookData.Edition, bookData.PubYear, bookData.Authors)
+	return book, nil
 }
 
 func (sq *SQLiteDB) filterByName(baseQuery string) (query string) {
@@ -167,7 +216,7 @@ func (sq *SQLiteDB) sortAndLimit(baseQuery string) (query string) {
 
 func (sq *SQLiteDB) FetchAuthors(pagination *m.PaginationVals, params url.Values) ([]*models.Author, error) {
 	const nameKey string = "name"
-	var authors []*models.Author
+	var authors = []*models.Author{}
 	var rows *sql.Rows
 	var err error
 	pageId := pagination.PageId

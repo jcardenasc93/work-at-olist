@@ -33,6 +33,7 @@ func (s *APIServer) Run() {
 
 	r.Route("/authors", func(r chi.Router) {
 		r.With(m.Pagination).Get("/", c.HTTPHandleFunc(c.GetAuthors, s.db))
+		r.Post("/", c.HTTPHandleFunc(c.CreateBook, s.db))
 	})
 
 	log.Printf("Server active on port: %s", s.port)

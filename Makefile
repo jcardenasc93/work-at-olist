@@ -8,5 +8,5 @@ run: build
 	@./bin/app
 
 test:
-	@go test -v ./...
+	@go test -v ./... --cover
 

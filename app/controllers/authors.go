@@ -16,16 +16,18 @@ func GetAuthors(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiRespon
 	params := r.URL.Query()
 	authors, err := db.FetchAuthors(p, params)
 	if err != nil {
-		return nil, NewApiError(http.StatusInternalServerError, "Internal Error")
+		return nil, NewApiError(http.StatusInternalServerError, "Couldn't fetch authors from database")
 	}
 
-	var nextPage int
 	if len(authors) > 0 {
+		var nextPage int
 		if p.PageId == 0 {
 			nextPage = p.Limit
 		} else {
 			nextPage = p.PageId + p.Limit
 		}
+		return NewApiResponse(200, authors, &nextPage), nil
 	}
-	return NewApiResponse(200, authors, nextPage), nil
+
+	return NewApiResponse(200, authors, nil), nil
 }

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"net/url"
 	"strings"
 
@@ -27,6 +28,10 @@ func (m *MockDB) CreateBookTable() error { return nil }
 func (m *MockDB) CreateAuthorBookTable() error { return nil }
 
 func (m *MockDB) InsertAuthor(string) error { return nil }
+
+func (m *MockDB) InsertBook(context.Context, models.CreateBookReq) (*models.Book, error) {
+	return nil, nil
+}
 
 func (m *MockDB) FetchAuthors(pagination *middlewares.PaginationVals, vals url.Values) ([]*models.Author, error) {
 	const nameKey string = "name"

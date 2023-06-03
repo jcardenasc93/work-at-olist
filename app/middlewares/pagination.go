@@ -26,6 +26,7 @@ func Pagination(next http.Handler) http.Handler {
 			limit := r.URL.Query().Get(LimitKey)
 			intLimit, err = strconv.Atoi(limit)
 			if err != nil {
+				// TODO: Refactor errors to handle trhough ApiError
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write([]byte(err.Error()))
 				return
@@ -39,6 +40,7 @@ func Pagination(next http.Handler) http.Handler {
 			pageId := r.URL.Query().Get(PageIdKey)
 			intPageId, err = strconv.Atoi(pageId)
 			if err != nil {
+				// TODO: Refactor errors to handle trhough ApiError
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write([]byte(err.Error()))
 				return
