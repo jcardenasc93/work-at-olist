@@ -17,13 +17,15 @@ func GetAuthors(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiRespon
 	authors, err := db.FetchAuthors(p, params)
 	if err != nil {
 		return nil, NewApiError(http.StatusInternalServerError, "Internal Error")
-	} else {
-		var nextPage int
+	}
+
+	var nextPage int
+	if len(authors) > 0 {
 		if p.PageId == 0 {
 			nextPage = p.Limit
 		} else {
 			nextPage = p.PageId + p.Limit
 		}
-		return NewApiResponse(200, authors, nextPage), nil
 	}
+	return NewApiResponse(200, authors, nextPage), nil
 }

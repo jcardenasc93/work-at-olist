@@ -46,6 +46,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Couldn't initialize DB")
 	}
+	err = db.Setup()
+	if err != nil {
+		log.Fatal("Couldn't initialize DB")
+	}
 	server := NewAPIServer(":8080", false, db)
 	server.Run()
 }

@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = db.CreateAuthorsTable()
+	err = db.CreateAuthorTable()
 	if err != nil {
 		log.Fatal(err)
 	}

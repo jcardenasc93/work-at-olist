@@ -18,7 +18,13 @@ func (m *MockDB) SetAuthors(authors []*models.Author) {
 	m.Authors = authors
 }
 
-func (m *MockDB) CreateAuthorsTable() error { return nil }
+func (m *MockDB) Setup() error { return nil }
+
+func (m *MockDB) CreateAuthorTable() error { return nil }
+
+func (m *MockDB) CreateBookTable() error { return nil }
+
+func (m *MockDB) CreateAuthorBookTable() error { return nil }
 
 func (m *MockDB) InsertAuthor(string) error { return nil }
 

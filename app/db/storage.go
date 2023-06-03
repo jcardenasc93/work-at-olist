@@ -8,8 +8,11 @@ import (
 )
 
 type ApiDB interface {
-	CreateAuthorsTable() error
+	Setup() error
+	CreateAuthorTable() error
 	InsertAuthor(string) error
 	FetchAuthors(*middlewares.PaginationVals, url.Values) ([]*models.Author, error)
 	sortAndLimit(string) string
+	CreateBookTable() error
+	CreateAuthorBookTable() error
 }

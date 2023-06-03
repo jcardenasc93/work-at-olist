@@ -47,11 +47,30 @@ func NewSQLiteDB() (*SQLiteDB, error) {
 	}, nil
 }
 
-func (sq *SQLiteDB) CreateAuthorsTable() error {
-	log.Println("Creating Authors table...")
+func (sq *SQLiteDB) Setup() error {
+	err := sq.CreateAuthorTable()
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	err = sq.CreateBookTable()
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	err = sq.CreateAuthorBookTable()
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	return nil
+}
+
+func (sq *SQLiteDB) CreateAuthorTable() error {
+	log.Println("Creating author table...")
 
 	createAuthorsTable := `
-    CREATE TABLE IF NOT EXISTS authors (
+    CREATE TABLE IF NOT EXISTS author (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name VARCHAR(64) NOT NULL
     )
@@ -70,9 +89,55 @@ func (sq *SQLiteDB) CreateAuthorsTable() error {
 	return nil
 }
 
+func (sq *SQLiteDB) CreateBookTable() error {
+	log.Println("Creating Authors table...")
+
+	createBooksTable := `
+    CREATE TABLE IF NOT EXISTS book (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name VARCHAR(80) NOT NULL,
+        edition INTEGER NOT NULL,
+        publication_year INTEGER NOT NULL
+    )
+    `
+
+	stmt, err := sq.db.Prepare(createBooksTable)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sq *SQLiteDB) CreateAuthorBookTable() error {
+	log.Println("Creating Authors-Books relationship table...")
+	createAuthorsBooksTable := `
+    CREATE TABLE IF NOT EXISTS author_book (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        author_id INTEGER,
+        book_id INTEGER,
+        FOREIGN KEY(author_id) REFERENCES author(id)
+        ON DELETE NO ACTION,
+        FOREIGN KEY(book_id) REFERENCES book(id)
+        ON DELETE NO ACTION
+    )`
+	stmt, err := sq.db.Prepare(createAuthorsBooksTable)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sq *SQLiteDB) InsertAuthor(authorName string) error {
 	insertAuthorStmt := `
-    INSERT INTO authors (name) VALUES (?)
+    INSERT INTO author (name) VALUES (?)
     `
 	stmt, err := sq.db.Prepare(insertAuthorStmt)
 	if err != nil {
@@ -108,7 +173,7 @@ func (sq *SQLiteDB) FetchAuthors(pagination *m.PaginationVals, params url.Values
 	pageId := pagination.PageId
 	limit := pagination.Limit
 
-	query := `SELECT id, name FROM authors
+	query := `SELECT id, name FROM author
               WHERE id > ?`
 
 	if params.Has(nameKey) {
