@@ -10,7 +10,9 @@ import (
 )
 
 type MockDB struct {
-	Authors []*models.Author
+	Authors      []*models.Author
+	Books        []*models.Book
+	AuthorsBooks []map[uint64][]uint64
 }
 
 func NewMockDB() *MockDB { return &MockDB{} }
@@ -29,8 +31,11 @@ func (m *MockDB) CreateAuthorBookTable() error { return nil }
 
 func (m *MockDB) InsertAuthor(string) error { return nil }
 
-func (m *MockDB) InsertBook(context.Context, models.CreateBookReq) (*models.Book, error) {
-	return nil, nil
+func (m *MockDB) InsertBook(c context.Context, req *models.CreateBookReq) (*models.Book, error) {
+	book := models.NewBook(uint64(len(m.Books)+1), req.Name, req.Edition, req.PubYear, req.Authors)
+	m.Books = append(m.Books, book)
+	m.AuthorsBooks = append(m.AuthorsBooks, map[uint64][]uint64{book.Id: req.Authors})
+	return book, nil
 }
 
 func (m *MockDB) FetchAuthors(pagination *middlewares.PaginationVals, vals url.Values) ([]*models.Author, error) {
