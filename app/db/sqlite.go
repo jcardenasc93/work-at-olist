@@ -188,7 +188,7 @@ func (sq *SQLiteDB) InsertBook(ctx context.Context, bookData *models.CreateBookR
 	for _, author := range bookData.Authors {
 		_, err = authorBookStmt.ExecContext(ctx, author, bookId)
 		if err != nil {
-			log.Printf("Failing inserting author_book relationship with author_id: %d, book_id: %d.\n%s", author, bookId, err.Error())
+			log.Printf("Failing inserting author_book relationship with author_id: %v, book_id: %v.\n%s", author, bookId, err.Error())
 			return nil, err
 		}
 	}
@@ -198,7 +198,7 @@ func (sq *SQLiteDB) InsertBook(ctx context.Context, bookData *models.CreateBookR
 		return nil, err
 	}
 
-	book := models.NewBook(uint64(bookId), bookData.Name, bookData.Edition, bookData.PubYear, bookData.Authors)
+	book := models.NewBook(float64(bookId), bookData.Name, bookData.Edition, bookData.PubYear, bookData.Authors)
 	return book, nil
 }
 

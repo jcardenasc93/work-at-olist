@@ -41,10 +41,16 @@ func createBookAPISuccess(t *testing.T) {
 
 	apiRes := decodeResponseBody[ApiResponse](t, resp.Body)
 	data := apiRes.Data.(map[string]interface{})
-	checkRespBody(t, body, data, "name")
-	checkRespBody(t, body, data, "edition")
-	checkRespBody(t, body, data, "publication_year")
-	checkRespBody(t, body, data, "authors")
+	for k := range body {
+		checkRespBody(t, body, data, k)
+	}
+
+	dbAuthorsBooks := mockDB.AuthorsBooks
+	bookId := data["id"].(float64)
+	eq := reflect.DeepEqual(dbAuthorsBooks[bookId], body["authors"])
+	if eq != true {
+		t.Error("Relationship authors_book are wrong")
+	}
 }
 
 func checkRespBody(t *testing.T, expected map[string]any, apiRes map[string]any, attr string) {

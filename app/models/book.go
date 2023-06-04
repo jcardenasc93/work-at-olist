@@ -1,14 +1,14 @@
 package models
 
 type Book struct {
-	Id      uint64   `json:"id"`
-	Name    string   `json:"name"`
-	Edition uint16   `json:"edition"`
-	PubYear uint32   `json:"publication_year"`
-	Authors []uint64 `json:"authors"`
+	Id      float64   `json:"id"`
+	Name    string    `json:"name"`
+	Edition float64   `json:"edition"`
+	PubYear float64   `json:"publication_year"`
+	Authors []float64 `json:"authors"`
 }
 
-func NewBook(id uint64, name string, edition uint16, pubYear uint32, authors []uint64) *Book {
+func NewBook(id float64, name string, edition float64, pubYear float64, authors []float64) *Book {
 	return &Book{
 		Id:      id,
 		Name:    name,
@@ -19,8 +19,8 @@ func NewBook(id uint64, name string, edition uint16, pubYear uint32, authors []u
 }
 
 type CreateBookReq struct {
-	Name    string   `json:"name"`
-	Edition uint16   `json:"edition"`
-	PubYear uint32   `json:"publication_year"`
-	Authors []uint64 `json:"authors"`
+	Name    string    `json:"name"`
+	Edition float64   `json:"edition"`
+	PubYear float64   `json:"publication_year"`
+	Authors []float64 `json:"authors"`
 }

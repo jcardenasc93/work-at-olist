@@ -28,15 +28,15 @@ func CreateBook(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiRespon
 
 func checkEmptyVals(bookReq *m.CreateBookReq) error {
 	var nameDef string
-	var editionDef uint16
-	var pubYearDef uint32
+	var editionDef float64
+	var pubYearDef float64
 	if bookReq.Name == nameDef {
 		return errors.New("Missing name value")
 	}
 	if bookReq.Edition == editionDef {
 		return errors.New("Missing edition value")
 	}
-	if uint32(bookReq.PubYear) == pubYearDef {
+	if bookReq.PubYear == pubYearDef {
 		return errors.New("Missing publication_year value")
 	}
 	if bookReq.Authors == nil {
