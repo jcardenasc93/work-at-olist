@@ -36,6 +36,7 @@ func (s *APIServer) Run() {
 	})
 	r.Route("/books", func(r chi.Router) {
 		r.Post("/", c.HTTPHandleFunc(c.CreateBook, s.db))
+		r.With(m.Pagination).Get("/", c.HTTPHandleFunc(c.GetBooks, s.db))
 	})
 
 	log.Printf("Server active on port: %s", s.port)

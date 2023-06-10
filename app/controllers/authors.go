@@ -8,8 +8,7 @@ import (
 )
 
 func GetAuthors(w http.ResponseWriter, r *http.Request, db db.ApiDB) (*ApiResponse, *ApiError) {
-	pagination := r.Context().Value(m.PaginationKey)
-	p, ok := pagination.(*m.PaginationVals)
+	p, ok := m.CheckPagination(r.Context())
 	if ok == false {
 		return nil, NewApiError(http.StatusInternalServerError, "Internal Error")
 	}

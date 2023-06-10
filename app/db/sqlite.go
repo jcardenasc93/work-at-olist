@@ -214,6 +214,94 @@ func (sq *SQLiteDB) sortAndLimit(baseQuery string) (query string) {
 	return
 }
 
+func (sq *SQLiteDB) applyQueryParams(baseQuery string, q allowedQParams, params url.Values) (query string, paramVals []any) {
+	query = baseQuery
+	for key, fun := range q.params {
+		if params.Has(key) {
+			query = fun(query)
+			keyVal := params.Get(key)
+			paramVals = append(paramVals, keyVal)
+		}
+	}
+	return
+}
+
+func (sq *SQLiteDB) applySortAndLimit(baseQuery string, pageId int, limit int, paramVals []any) (query string, queryVals []any) {
+	query = sq.sortAndLimit(baseQuery)
+	queryVals = []any{pageId}
+	queryVals = append(queryVals, paramVals...)
+	queryVals = append(queryVals, limit)
+	return
+}
+
+func (sq *SQLiteDB) FetchAuthorsForBooks(books []*models.Book) (authorsIds []float64, err error) {
+	query := `SELECT b.id, ab.author_id  FROM book b
+              JOIN author_book ab ON b.id = ab.book_id
+              WHERE b.id IN`
+	bookIds := []float64{}
+	for i, book := range books {
+		bookIds = append(bookIds, book.Id)
+		if i == 0 {
+			query = fmt.Sprintf("%s %s", query, "(?,")
+		}
+		if i == len(books)-1 {
+			query = fmt.Sprintf("%s %s", query, ", ?)")
+			continue
+		}
+		query = fmt.Sprintf("%s %s", query, " ?,")
+	}
+	query = fmt.Sprintf("")
+
+	return
+}
+
+func (sq *SQLiteDB) FetchBooks(pagination *m.PaginationVals, params url.Values) ([]*models.Book, error) {
+	const nameKey string = "name"
+	const pubYearKey string = "publication_year"
+	const editionKey string = "edition"
+	const authorKey string = "author"
+	var books = []*models.Book{}
+	var rows *sql.Rows
+	var err error
+	pageId := pagination.PageId
+	limit := pagination.Limit
+
+	query := `SELECT id, name, edition, publication_year FROM book
+              WHERE id > ?`
+
+	allowedParams := allowedQParams{
+		params: map[string]func(string) string{
+			nameKey: sq.filterByName,
+		},
+	}
+
+	query, paramVals := sq.applyQueryParams(query, allowedParams, params)
+	query, queryVals := sq.applySortAndLimit(query, pageId, limit, paramVals)
+	rows, err = sq.execQuery(query, queryVals...)
+	if err != nil {
+		return books, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var id float64
+		var name string
+		var edition float64
+		var pubYear float64
+
+		err = rows.Scan(&id, &name, &edition, &pubYear)
+		if err != nil {
+			return books, err
+		}
+
+		books = append(books, models.NewBook(id, name, edition, pubYear, []float64{}))
+	}
+
+	log.Println("QUERY SUCCESS!!!!!!!!!")
+	return books, err
+}
+
 func (sq *SQLiteDB) FetchAuthors(pagination *m.PaginationVals, params url.Values) ([]*models.Author, error) {
 	const nameKey string = "name"
 	var authors = []*models.Author{}
@@ -261,7 +349,7 @@ func (sq *SQLiteDB) FetchAuthors(pagination *m.PaginationVals, params url.Values
 func (sq *SQLiteDB) execQuery(query string, params ...any) (*sql.Rows, error) {
 	rows, err := sq.db.Query(query, params...)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
 		return nil, err
 	}
 	return rows, nil

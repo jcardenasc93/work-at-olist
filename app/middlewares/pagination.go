@@ -54,3 +54,9 @@ func Pagination(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+func CheckPagination(context context.Context) (p *PaginationVals, ok bool) {
+	pagination := context.Value(PaginationKey)
+	p, ok = pagination.(*PaginationVals)
+	return p, ok
+}
