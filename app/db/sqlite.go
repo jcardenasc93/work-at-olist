@@ -350,20 +350,17 @@ func (sq *SQLiteDB) FetchAuthors(pagination *m.PaginationVals, params url.Values
 	query := `SELECT id, name FROM author
               WHERE id > ?`
 
-	if params.Has(nameKey) {
-		nameValue := string(params.Get(nameKey))
-		query = sq.filterByName(query)
-		query = sq.sortAndLimit(query)
-		rows, err = sq.execQuery(query, pageId, nameValue, limit)
-		if err != nil {
-			return authors, err
-		}
-	} else {
-		query = sq.sortAndLimit(query)
-		rows, err = sq.execQuery(query, pageId, limit)
-		if err != nil {
-			return authors, err
-		}
+	allowedParams := allowedQParams{
+		params: map[string]func(string) string{
+			nameKey: sq.filterByName,
+		},
+	}
+
+	query, paramVals := sq.applyQueryParams(query, allowedParams, params)
+	query, queryVals := sq.applySortAndLimit(query, pageId, limit, paramVals)
+	rows, err = sq.execQuery(query, queryVals...)
+	if err != nil {
+		return authors, err
 	}
 
 	defer rows.Close()
