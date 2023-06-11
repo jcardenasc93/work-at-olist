@@ -234,25 +234,55 @@ func (sq *SQLiteDB) applySortAndLimit(baseQuery string, pageId int, limit int, p
 	return
 }
 
-func (sq *SQLiteDB) FetchAuthorsForBooks(books []*models.Book) (authorsIds []float64, err error) {
+func (sq *SQLiteDB) aggregateAuthorsInBook(books []*models.Book, bookId float64, authorId float64) []*models.Book {
+	for _, book := range books {
+		if book.Id == bookId {
+			book.Authors = append(book.Authors, authorId)
+		}
+	}
+	return books
+}
+
+func (sq *SQLiteDB) FetchAuthorsForBooks(books []*models.Book) ([]*models.Book, error) {
 	query := `SELECT b.id, ab.author_id  FROM book b
               JOIN author_book ab ON b.id = ab.book_id
               WHERE b.id IN`
-	bookIds := []float64{}
-	for i, book := range books {
-		bookIds = append(bookIds, book.Id)
-		if i == 0 {
-			query = fmt.Sprintf("%s %s", query, "(?,")
+	bookIds := []any{}
+	if len(books) == 1 {
+		query = fmt.Sprintf("%s %s", query, "(?)")
+		bookIds = append(bookIds, books[0].Id)
+	} else {
+		for i, book := range books {
+			bookIds = append(bookIds, book.Id)
+			if i == 0 {
+				query = fmt.Sprintf("%s %s", query, "(?,")
+				continue
+			}
+			if i == len(books)-1 {
+				query = fmt.Sprintf("%s %s", query, " ?)")
+				continue
+			}
+			query = fmt.Sprintf("%s %s", query, " ?,")
 		}
-		if i == len(books)-1 {
-			query = fmt.Sprintf("%s %s", query, ", ?)")
-			continue
-		}
-		query = fmt.Sprintf("%s %s", query, " ?,")
 	}
-	query = fmt.Sprintf("")
 
-	return
+	rows, err := sq.execQuery(query, bookIds...)
+	if err != nil {
+		return books, err
+	}
+	for rows.Next() {
+		var bookId float64
+		var authorId float64
+
+		err = rows.Scan(&bookId, &authorId)
+		if err != nil {
+			return books, err
+		}
+
+		books = sq.aggregateAuthorsInBook(books, bookId, authorId)
+	}
+
+	return books, nil
 }
 
 func (sq *SQLiteDB) FetchBooks(pagination *m.PaginationVals, params url.Values) ([]*models.Book, error) {
@@ -298,7 +328,14 @@ func (sq *SQLiteDB) FetchBooks(pagination *m.PaginationVals, params url.Values) 
 		books = append(books, models.NewBook(id, name, edition, pubYear, []float64{}))
 	}
 
-	log.Println("QUERY SUCCESS!!!!!!!!!")
+	if len(books) > 0 {
+		books, err = sq.FetchAuthorsForBooks(books)
+		if err != nil {
+			log.Println(err)
+			return books, err
+		}
+	}
+
 	return books, err
 }
 

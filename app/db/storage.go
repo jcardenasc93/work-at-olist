@@ -18,7 +18,7 @@ type ApiDB interface {
 	InsertAuthor(string) error
 	FetchAuthors(*middlewares.PaginationVals, url.Values) ([]*models.Author, error)
 	FetchBooks(*middlewares.PaginationVals, url.Values) ([]*models.Book, error)
-	FetchAuthorsForBooks([]*models.Book) ([]float64, error)
+	FetchAuthorsForBooks([]*models.Book) ([]*models.Book, error)
 	applyQueryParams(string, allowedQParams, url.Values) (string, []any)
 	applySortAndLimit(string, int, int, []any) (string, []any)
 	sortAndLimit(string) string
