@@ -3,10 +3,14 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"testing"
+
+	"github.com/jcardenasc93/work-at-olist/app/middlewares"
 )
 
 const contentType = "application/json"
@@ -122,5 +126,122 @@ func TestCreateBookWrongVals(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected %d status code but got %d", http.StatusBadRequest, resp.StatusCode)
+	}
+}
+
+func TestGetBookAPI(t *testing.T) {
+	populateAuthors()
+	populateBooks()
+	t.Run("Success cases", getBookAPISuccess)
+	// t.Run("Failing cases", createBookAPIErr)
+}
+
+func getBookAPISuccess(t *testing.T) {
+	t.Run("Success no params", getBookAPISuccessNoParams)
+	t.Run("Success with params", getBookAPIWithParams)
+}
+
+func getBookAPISuccessNoParams(t *testing.T) {
+	handler := HTTPHandleFunc(GetBooks, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	resRecorder := httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response := resRecorder.Result()
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("Expected HTTP code %d but got %d", http.StatusOK, response.StatusCode)
+	}
+	apiRes := decodeResponseBody[ApiResponse](t, response.Body)
+	books := apiRes.Data.([]interface{})
+	expectedLen := len(mockDB.Books[:middlewares.DefaultLimit])
+	if len(books) != expectedLen {
+		t.Errorf("Expected %d books but got %d", expectedLen, len(books))
+	}
+	if *apiRes.NextPage != middlewares.DefaultLimit {
+		t.Errorf("Expected %d next_page value but got %d", middlewares.DefaultLimit, *apiRes.NextPage)
+	}
+}
+
+func getBookAPIWithParams(t *testing.T) {
+	limit := 3
+	resp := getBooksWithLimit(t, limit)
+	getBooksWithPageId(t, limit, *resp.NextPage)
+	getBooksNameFilter(t, "7", limit)
+	year := mockDB.Books[0].PubYear
+	getBooksPubYearFilter(t, year, limit)
+}
+
+func getBooksWithLimit(t *testing.T, limit int) ApiResponse {
+	handler := HTTPHandleFunc(GetBooks, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d", limit), nil)
+	q := req.URL.Query()
+	q.Add("limit", strconv.Itoa(limit))
+	req.URL.RawQuery = q.Encode()
+	resRecorder := httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response := resRecorder.Result()
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("Expected HTTP code %d but got %d", http.StatusOK, response.StatusCode)
+	}
+	apiRes := decodeResponseBody[ApiResponse](t, response.Body)
+	books := apiRes.Data.([]interface{})
+	if len(books) != limit {
+		t.Errorf("Expected %d books but got %d", limit, len(books))
+	}
+	if *apiRes.NextPage != limit {
+		t.Errorf("Expected %d next_page value but got %d", middlewares.DefaultLimit, apiRes.NextPage)
+	}
+	return apiRes
+}
+
+func getBooksWithPageId(t *testing.T, limit int, pageId int) {
+	handler := HTTPHandleFunc(GetBooks, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&page_id=%d", limit, pageId), nil)
+	resRecorder := httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response := resRecorder.Result()
+	apiRes := decodeResponseBody[ApiResponse](t, response.Body)
+	books := apiRes.Data.([]interface{})
+	book := books[0].(map[string]any)
+	id := book["id"].(float64)
+	expetedBook := mockDB.Authors[limit]
+	if id != float64(expetedBook.Id) {
+		t.Errorf("Expected %d book's id but got %v", expetedBook.Id, id)
+	}
+}
+
+func getBooksNameFilter(t *testing.T, name string, limit int) {
+	handler := HTTPHandleFunc(GetBooks, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&name=%s", 3, name), nil)
+	resRecorder := httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response := resRecorder.Result()
+	apiRes := decodeResponseBody[ApiResponse](t, response.Body)
+	books := apiRes.Data.([]interface{})
+	if len(books) != 1 {
+		t.Errorf("Expected %d books but got %d", 1, len(books))
+	}
+}
+
+func getBooksPubYearFilter(t *testing.T, year float64, limit int) {
+	handler := HTTPHandleFunc(GetBooks, mockDB)
+	testHandler := middlewares.Pagination(handler)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?limit=%d&year=%v", 3, year), nil)
+	resRecorder := httptest.NewRecorder()
+	testHandler.ServeHTTP(resRecorder, req)
+	response := resRecorder.Result()
+	apiRes := decodeResponseBody[ApiResponse](t, response.Body)
+	books := apiRes.Data.([]interface{})
+	if len(books) == 0 {
+		t.Errorf("Expected at least one book")
 	}
 }

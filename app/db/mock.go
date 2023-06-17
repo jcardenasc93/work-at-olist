@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/jcardenasc93/work-at-olist/app/middlewares"
@@ -19,6 +20,10 @@ func NewMockDB() *MockDB { return &MockDB{AuthorsBooks: make(map[float64][]float
 
 func (m *MockDB) SetAuthors(authors []*models.Author) {
 	m.Authors = authors
+}
+
+func (m *MockDB) SetBooks(books []*models.Book) {
+	m.Books = books
 }
 
 func (m *MockDB) Setup() error { return nil }
@@ -58,6 +63,83 @@ func (m *MockDB) FetchAuthors(pagination *middlewares.PaginationVals, vals url.V
 	return authors, nil
 }
 
+func filterBooksByName(books []*models.Book, name string) []*models.Book {
+	result := []*models.Book{}
+	for _, book := range books {
+		if strings.Contains(book.Name, name) {
+			result = append(result, book)
+		}
+	}
+	return result
+
+}
+
+func filterBooksByPubYear(books []*models.Book, year string) []*models.Book {
+	y, _ := strconv.Atoi(year)
+	value := float64(y)
+	result := []*models.Book{}
+
+	for _, book := range books {
+		if book.PubYear == value {
+			result = append(result, book)
+		}
+	}
+	return result
+
+}
+
+func (m *MockDB) FetchBooks(pagination *middlewares.PaginationVals, vals url.Values) ([]*models.Book, error) {
+	const nameKey string = "name"
+	const pubYearKey string = "publication_year"
+	const editionKey string = "edition"
+	const authorKey string = "author"
+	var books []*models.Book
+	limit := pagination.Limit
+	pageId := pagination.PageId
+
+	filters := allowedFilters[*models.Book]{
+		params: map[string]func([]*models.Book, string) []*models.Book{
+			nameKey:    filterBooksByName,
+			pubYearKey: filterBooksByPubYear,
+		},
+	}
+	books = applyFilters(m.Books, filters, vals)
+
+	books = books[pageId:]
+	if limit < len(books) {
+		return books[:limit], nil
+	}
+	return books, nil
+}
+
+func (m *MockDB) FetchAuthorsForBooks([]*models.Book) ([]*models.Book, error) {
+	return m.Books, nil
+}
+
+func (m *MockDB) applyQueryParams(baseQuery string, q allowedQParams, params url.Values) (query string, paramVals []any) {
+	return
+}
+
+type modelType interface {
+	*models.Author | *models.Book
+}
+
+type allowedFilters[T modelType] struct {
+	params map[string]func([]T, string) []T
+}
+
+func applyFilters[T modelType](data []T, q allowedFilters[T], vals url.Values) []T {
+	// result := []T{}
+	for key, fun := range q.params {
+		if vals.Has(key) {
+			keyVal := vals.Get(key)
+			data = fun(data, keyVal)
+		}
+	}
+
+	return data
+}
+
 func (m *MockDB) filterByName(name string) (authors []*models.Author) {
 	for _, author := range m.Authors {
 		if strings.Contains(author.Name, name) {
@@ -67,4 +149,4 @@ func (m *MockDB) filterByName(name string) (authors []*models.Author) {
 	return authors
 }
 
-func (m *MockDB) sortAndLimit(baseQ string) (query string) { return query }
+func (m *MockDB) sortAndLimit(string) string { return "" }

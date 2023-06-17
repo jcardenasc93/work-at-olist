@@ -20,7 +20,6 @@ type ApiDB interface {
 	FetchBooks(*middlewares.PaginationVals, url.Values) ([]*models.Book, error)
 	FetchAuthorsForBooks([]*models.Book) ([]*models.Book, error)
 	applyQueryParams(string, allowedQParams, url.Values) (string, []any)
-	applySortAndLimit(string, int, int, []any) (string, []any)
 	sortAndLimit(string) string
 	CreateBookTable() error
 	CreateAuthorBookTable() error
